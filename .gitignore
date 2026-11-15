@@ -1,0 +1,13 @@
+.env
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+.idea/
+work/
+runs/
+web/node_modules/
+web/dist/
+web/*.tsbuildinfo

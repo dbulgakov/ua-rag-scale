@@ -1,0 +1,49 @@
+{
+  "questions": {
+    "en": 20000,
+    "uk": 735
+  },
+  "exposures": {
+    "en": 40000,
+    "uk": 1470
+  },
+  "baseline_tune_recall_10": {
+    "en": 0.9292999999999999,
+    "uk": 0.8175675675675675,
+    "mean": 0.8734337837837838
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "loss": 1.9223829974178914,
+      "tune_recall_10": {
+        "en": 0.9146333333333333,
+        "uk": 0.7837837837837838,
+        "mean": 0.8492085585585585
+      }
+    },
+    {
+      "epoch": 2,
+      "loss": 1.6821526294505154,
+      "tune_recall_10": {
+        "en": 0.9156333333333333,
+        "uk": 0.7905405405405406,
+        "mean": 0.8530869369369369
+      }
+    }
+  ],
+  "hard_negatives": {
+    "uk": {
+      "questions": 735,
+      "negatives": 2940,
+      "negatives_with_answer": 0.07857142857142857,
+      "questions_with_such_negative": 0.21496598639455783
+    },
+    "en": {
+      "questions": 20000,
+      "negatives": 80000,
+      "negatives_with_answer": 0.065925,
+      "questions_with_such_negative": 0.16425
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "uk": {
+    "wikipedia_articles": 1294720,
+    "wikipedia_chunks": 2926589,
+    "pool_passages": 1000000,
+    "pool_articles": 442262,
+    "graph": {
+      "namespace0_pages": 2040154,
+      "articles": 1151093,
+      "edges": 90925711,
+      "unresolved_link_share": 0.10402110725194079,
+      "pool_edges": 10477585,
+      "pool_articles_without_node": 0.11416083678905264,
+      "gold_articles": 51,
+      "gold_articles_with_node": 51
+    },
+    "specificity": {
+      "questions": 887,
+      "low_specificity": 179
+    },
+    "tokens": {
+      "10000": 2896709,
+      "30000": 8540845,
+      "100000": 28309841,
+      "300000": 84757222,
+      "1000000": 281983268
+    }
+  },
+  "en": {
+    "pool_passages": 1000000,
+    "pool_articles": 999460,
+    "graph": {
+      "pool_edges": 1102298
+    },
+    "specificity": {
+      "questions": 1500,
+      "low_specificity": 150
+    },
+    "tokens": {
+      "10000": 783328,
+      "30000": 2139893,
+      "100000": 6885439,
+      "300000": 20461318,
+      "1000000": 67969771
+    }
+  }
+}

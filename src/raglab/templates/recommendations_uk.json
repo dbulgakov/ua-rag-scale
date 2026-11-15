@@ -1,0 +1,22 @@
+[
+  {
+    "size": "до 30 тис. уривків",
+    "use": "Точний пошук: ще швидкий ({uk_ms_exact_10k} мс на 10 тис.) і без втрат. Якщо є час — переранжування ({d_uk_rerank_hnsw_10k} Recall@5).",
+    "avoid": "IVF-PQ ({uk_ivfpq_10k} проти {uk_exact_10k}), LoRA-адаптер ({d_uk_finetuned_hnsw_10k})."
+  },
+  {
+    "size": "100–300 тис.",
+    "use": "HNSW або гібрид з лематизованим BM25 ({d_uk_hybrid_lemma_exact_100k} до точного пошуку). Переранжування дає {d_uk_rerank_hnsw_100k}, але коштує ≈ {uk_ms_rerank_scoring_100k} мс на запит.",
+    "avoid": "Гібрид з BM25 без лематизації ({d_uk_hybrid_exact_100k} до точного пошуку). Граф допомагає слабко ({d_uk_graph_hnsw_100k} на 100 тис.)."
+  },
+  {
+    "size": "1 млн",
+    "use": "Переранжування ({uk_rerank_1m} проти {uk_hnsw_1m} у HNSW) або, без нього, лематизований гібрид ({uk_hybrid_lemma_1m}).",
+    "avoid": "Граф ({uk_graph_1m} — не кращий за HNSW), IVF-PQ ({uk_ivfpq_1m})."
+  },
+  {
+    "size": "будь-який",
+    "use": "Маршрутизатор: переранжування лише для «тісних» запитів дає {uk_route_gain_pct}% виграшу при {uk_route_share_pct}% дорогих запитів.",
+    "avoid": "—"
+  }
+]
