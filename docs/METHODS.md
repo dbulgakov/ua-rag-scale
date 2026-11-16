@@ -12,7 +12,7 @@ How does retrieval quality in a RAG system change as the corpus grows from 10 th
 
 - **Source.** `wikimedia/wikipedia`, configuration `20231101.uk`, pinned revision. It is the only searchable source.
 - **Passages.** Each article is split at sentence boundaries into passages of at most 384 tokens of the encoder tokenizer with a 32-token overlap. A passage id `native-uk:<page>:<start>:<end>` is a character range of the article text, so ids are stable and verifiable.
-- **Pool.** The corpus is a fixed pool of 1,000,000 passages: all benchmark articles first, then whole articles in the order of `sha256("uk-pool-v1:" + article)`.
+- **Pool.** The corpus is a fixed pool of 1,000,000 passages: all benchmark articles first, then whole articles in the order of a salted SHA-256 hash of the article id.
 - **Check.** `raglab data` rebuilds the pool from the raw dump and fails unless the passage ids equal the pinned list in `data/pool/uk.parquet`.
 
 ### Ukrainian benchmark

@@ -21,6 +21,7 @@ TEMPLATES = Path(__file__).parent / "templates"
 
 SIZE = {10_000: "10 тис.", 30_000: "30 тис.", 100_000: "100 тис.", 300_000: "300 тис.", 1_000_000: "1 млн"}
 KEY = {10_000: "10k", 30_000: "30k", 100_000: "100k", 300_000: "300k", 1_000_000: "1m"}
+LANGUAGE = {"uk": "UA", "en": "EN"}
 METHOD = {
     "exact": "Точний пошук",
     "hnsw": "HNSW",
@@ -203,7 +204,7 @@ def generation_pairs(pairs: dict[str, pd.DataFrame]) -> str:
         wide = cells.pivot(index="size", columns="metric", values="cell")[list(ANSWER_METRIC)]
         wide.columns = [f"Δ {name}" for name in ANSWER_METRIC.values()]
         wide.insert(0, "Розмір", wide.index.map(SIZE))
-        wide.insert(0, "Мова", language.upper())
+        wide.insert(0, "Мова", LANGUAGE[language])
         frames.append(wide)
     return markdown(pd.concat(frames))
 
@@ -229,7 +230,7 @@ def errors(results: Results, language: str) -> pd.DataFrame:
 
 
 def error_table(results: Results) -> str:
-    frames = [errors(results, language).assign(language=language.upper()) for language in LANGUAGES]
+    frames = [errors(results, language).assign(language=LANGUAGE[language]) for language in LANGUAGES]
     table = pd.concat(frames).assign(
         size=lambda frame: frame["size"].map(SIZE), reading_rate=lambda f: f["reading_rate"].map(number)
     )
@@ -271,7 +272,7 @@ def router_tables(results: Results, reports: dict[str, dict]) -> tuple[str, str,
     policies, sizes, quality, parts = [], [], [], []
     for language, report in reports.items():
         for order, entry in report.items():
-            where = {"Мова": language.upper(), "Порядок": order}
+            where = {"Мова": LANGUAGE[language], "Порядок": order}
             parts.append(
                 where
                 | {
@@ -324,7 +325,7 @@ def law_tables(results: Results) -> tuple[str, str, pd.DataFrame]:
     )
     rows = []
     for row in checks.itertuples():
-        cells = {"Мова": row.language.upper(), "Порядок": row.order, "Метод": METHOD[row.method]}
+        cells = {"Мова": LANGUAGE[row.language], "Порядок": row.order, "Метод": METHOD[row.method]}
         cells["Факт 1 млн"] = interval(row.observed, row.low, row.high)
         for form, label in (("log_linear", "Лог-лінійна"), ("power", "Степенева")):
             hit = "так" if getattr(row, f"{form}_hit") else "ні"
@@ -341,7 +342,7 @@ def law_tables(results: Results) -> tuple[str, str, pd.DataFrame]:
         ["log_linear_error", "power_error", "last_value_error"]
     ].mean()
     table = mae.map(number).reset_index()
-    table["language"] = table["language"].str.upper()
+    table["language"] = table["language"].map(LANGUAGE)
     table.columns = ["Мова", "Порядок", "MAE лог-лінійної", "MAE степеневої", "MAE last-value"]
     return markdown(pd.DataFrame(rows)), markdown(table), checks
 
@@ -515,7 +516,7 @@ def figures(results: Results, reports: dict[str, dict]) -> None:
         for method in shown:
             part = curve[curve["method"] == method].sort_values("size")
             axis.plot(part["size"], part["recall_5"], marker="o", label=METHOD[method])
-        axis.set(xscale="log", title=language.upper(), xlabel="уривків у корпусі")
+        axis.set(xscale="log", title=LANGUAGE[language], xlabel="уривків у корпусі")
         axis.grid(alpha=0.3)
         counts = results.corpus[language]["tokens"]
         for method, style in (("exact", "-"), ("hnsw", "--")):
@@ -525,7 +526,7 @@ def figures(results: Results, reports: dict[str, dict]) -> None:
                 part["recall_5"],
                 style,
                 marker="o",
-                label=f"{language.upper()}, {METHOD[method]}",
+                label=f"{LANGUAGE[language]}, {METHOD[method]}",
             )
     axes[0].set_ylabel("Recall@5, test")
     axes[1].legend()
@@ -540,7 +541,7 @@ def figures(results: Results, reports: dict[str, dict]) -> None:
     figure, axis = plt.subplots(figsize=(6, 4))
     axis.plot(curve["expensive_share"], curve["recall_5"], marker="o", label="маршрутизатор")
     axis.plot(curve["expensive_share"], curve["random"], "--", label="випадково, той самий бюджет")
-    axis.set(xlabel="частка запитів на дорогий метод", ylabel="Recall@5, UK test")
+    axis.set(xlabel="частка запитів на дорогий метод", ylabel="Recall@5, UA test")
     axis.grid(alpha=0.3)
     axis.legend()
     figure.tight_layout()

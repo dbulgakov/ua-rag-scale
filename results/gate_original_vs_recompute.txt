@@ -33,26 +33,26 @@ cells compared 258   same mark 253   changed mark 5
   5. Генерація і розбір помилок / Переранжування − HNSW / EN | 10 тис. / Δ EM
       original   +0,025 [−0,010; +0,061]
       recompute  +0,040 [+0,005; +0,076] ↑
-  5. Генерація і розбір помилок / Переранжування − HNSW / UK | 10 тис. / Δ EM за лемами
+  5. Генерація і розбір помилок / Переранжування − HNSW / UA | 10 тис. / Δ EM за лемами
       original   +0,060 [+0,012; +0,106] ↑
       recompute  +0,040 [−0,006; +0,082]
-  5. Генерація і розбір помилок / Переранжування − HNSW / UK | 100 тис. / Δ EM
+  5. Генерація і розбір помилок / Переранжування − HNSW / UA | 100 тис. / Δ EM
       original   +0,040 [−0,006; +0,086]
       recompute  +0,060 [+0,011; +0,108] ↑
-  5. Генерація і розбір помилок / Переранжування − HNSW / UK | 100 тис. / Δ EM за лемами
+  5. Генерація і розбір помилок / Переранжування − HNSW / UA | 100 тис. / Δ EM за лемами
       original   +0,040 [−0,015; +0,098]
       recompute  +0,065 [+0,014; +0,115] ↑
-  7. Закон деградації / UK | hard | IVF-PQ / Лог-лінійна
+  7. Закон деградації / UA | hard | IVF-PQ / Лог-лінійна
       original   0,192, ні, −0,063
       recompute  0,192, так, −0,057
 
 3. Degradation law: registered forecast against the observation at 1 million passages
 --------------------------------------------------------------------------------------------
   block                   log-linear    power  last-value   law beats last-value
-  uk random    original        0.054    0.042       0.104   yes, yes
-  uk random    recompute       0.055    0.042       0.104   yes, yes
-  uk hard      original        0.055    0.095       0.024   no, no
-  uk hard      recompute       0.054    0.095       0.024   no, no
+  ua random    original        0.054    0.042       0.104   yes, yes
+  ua random    recompute       0.055    0.042       0.104   yes, yes
+  ua hard      original        0.055    0.095       0.024   no, no
+  ua hard      recompute       0.054    0.095       0.024   no, no
   en random    original        0.026    0.015       0.069   yes, yes
   en random    recompute       0.027    0.015       0.068   yes, yes
   en hard      original        0.037    0.092       0.022   no, no
@@ -165,7 +165,7 @@ provider (qwen3-235b through OpenRouter, temperature 0, seed 42): 84.2% of 10400
   en no_rag   75.5% of 200 (identical prompts)
   en oracle   95.5% of 200 (identical prompts)
   en rag      89.4% of 4800
-  uk no_rag   55.5% of 200 (identical prompts)
-  uk oracle   86.0% of 200 (identical prompts)
-  uk rag      80.1% of 4800
+  ua no_rag   55.5% of 200 (identical prompts)
+  ua oracle   86.0% of 200 (identical prompts)
+  ua rag      80.1% of 4800
 local control (Qwen3-4B, MLX): 100.0% of 1000 answers

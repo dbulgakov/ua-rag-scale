@@ -50,7 +50,7 @@ A GPU and about 20 GB of RAM are needed in practice; `--device cuda|mps|cpu` ove
 
 ## Reproducibility
 
-The tables in `results/` come from a full rerun of the published code on 2026-11-16: the retrieval stages on Google Colab (L4 GPU, high-RAM runtime, about 7 h 40 min) and generation on a laptop (about $1.3 through OpenRouter). The rerun was compared with the tables of the original run, which was computed on an Apple M3 Max and is kept in commit `57de63d`. The full comparison is in [results/gate_v1_vs_recompute.txt](results/gate_v1_vs_recompute.txt).
+The tables in `results/` come from a full rerun of the published code on 2026-11-16: the retrieval stages on Google Colab (L4 GPU, high-RAM runtime, about 7 h 40 min) and generation on a laptop (about $1.3 through OpenRouter). The rerun was compared with the tables of the original run, which was computed on an Apple M3 Max and is kept in commit `57de63d`. The full comparison is in [results/gate_original_vs_recompute.txt](results/gate_original_vs_recompute.txt).
 
 What matched:
 
