@@ -3,6 +3,7 @@
   {
    "method": "exact",
    "label": "Точний пошук",
+   "dashed": false,
    "points": [
     {
      "size": 10000,
@@ -29,6 +30,7 @@
   {
    "method": "hnsw",
    "label": "HNSW",
+   "dashed": false,
    "points": [
     {
      "size": 10000,
@@ -55,6 +57,7 @@
   {
    "method": "hybrid",
    "label": "Гібрид BM25 + вектори",
+   "dashed": false,
    "points": [
     {
      "size": 10000,
@@ -81,6 +84,7 @@
   {
    "method": "graph",
    "label": "Граф посилань (PPR)",
+   "dashed": false,
    "points": [
     {
      "size": 10000,
@@ -107,6 +111,7 @@
   {
    "method": "rerank",
    "label": "Переранжування",
+   "dashed": false,
    "points": [
     {
      "size": 10000,
@@ -125,6 +130,7 @@
   {
    "method": "hybrid_lemma",
    "label": "Гібрид з лематизованим BM25",
+   "dashed": false,
    "points": [
     {
      "size": 10000,
@@ -153,6 +159,34 @@
   {
    "method": "exact",
    "label": "Точний пошук",
+   "dashed": false,
+   "points": [
+    {
+     "size": 10000,
+     "recall": 0.8920420634920636
+    },
+    {
+     "size": 30000,
+     "recall": 0.8655642857142857
+    },
+    {
+     "size": 100000,
+     "recall": 0.8252055555555555
+    },
+    {
+     "size": 300000,
+     "recall": 0.7803444444444444
+    },
+    {
+     "size": 1000000,
+     "recall": 0.7220333333333333
+    }
+   ]
+  },
+  {
+   "method": "exact",
+   "label": "Точний пошук",
+   "dashed": true,
    "points": [
     {
      "size": 10000,
@@ -303,7 +337,7 @@
  "recommendations": [
   {
    "size": "до 30 тис. уривків",
-   "use": "Точний пошук: ще швидкий (0,8 мс на 10 тис.) і без втрат. Якщо є час — переранжування (+0,119 Hit@5).",
+   "use": "Точний пошук: ще швидкий (0,8 мс на 10 тис.) і без втрат. Якщо є час — переранжування (+0,119 Recall@5).",
    "avoid": "IVF-PQ (0,584 проти 0,714), LoRA-адаптер (−0,049)."
   },
   {

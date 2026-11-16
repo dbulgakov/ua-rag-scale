@@ -6,7 +6,7 @@ type Check = { answers: string[]; passages: Hit[] };
 type LinkGraph = { nodes: { id: number; title: string; url: string; seed: boolean }[]; edges: { source: number; target: number }[] };
 type Result = { question: string; size: number; hits: Hit[]; answer: Answer; check: Check | null; graph: LinkGraph | null };
 type Point = { size: number; recall: number };
-type Series = { method: string; label: string; points: Point[]; language?: "uk" | "en" };
+type Series = { method: string; label: string; points: Point[]; language?: "uk" | "en"; dashed?: boolean };
 type Recommendation = { size: string; use: string; avoid: string };
 type Research = { curves: Series[]; english: Series[]; tokens: Record<"uk" | "en", Record<string, number>>; recommendations: Recommendation[]; router: { share: number; recall: number; random: number }[] | null };
 type Meta = { sizes: number[]; examples: { id: string; question: string }[]; research: Research | null };
@@ -67,8 +67,8 @@ function LineChart({ series, selected, tokens }: { series: Series[]; selected: n
       {ticks.map((tick) => <text key={tick} x={x(tick)} y={height - 12} className="tick" textAnchor="middle">{tokens ? `${sizeLabel(tick)} токенів` : sizeLabel(tick)}</text>)}
       {!tokens && <line x1={x(selected)} x2={x(selected)} y1={top} y2={height - bottom} className="cursor" />}
       {series.map((item, index) => (
-        <g key={item.method}>
-          <polyline points={item.points.map((point) => `${x(value(item, point.size))},${y(point.recall)}`).join(" ")} fill="none" stroke={item.language === "en" ? "#6b7280" : COLORS[index % COLORS.length]} strokeWidth={2.5} strokeDasharray={item.method === "hybrid_lemma" || item.language === "en" ? "6 4" : undefined} />
+        <g key={`${item.language ?? "uk"}-${item.method}-${index}`}>
+          <polyline points={item.points.map((point) => `${x(value(item, point.size))},${y(point.recall)}`).join(" ")} fill="none" stroke={item.language === "en" ? "#6b7280" : COLORS[index % COLORS.length]} strokeWidth={2.5} strokeDasharray={item.method === "hybrid_lemma" || item.dashed ? "6 4" : undefined} />
           {item.points.map((point) => <circle key={point.size} cx={x(value(item, point.size))} cy={y(point.recall)} r={3.5} fill={item.language === "en" ? "#6b7280" : COLORS[index % COLORS.length]} />)}
         </g>
       ))}
@@ -250,14 +250,14 @@ export default function App() {
               <p className="readout">Розмір бази: <strong>{sizeLabel(selectedSize)} уривків</strong></p>
               <Toggle label="Вісь графіка" value={!tokenAxis} onChange={(passages) => setTokenAxis(!passages)} on="Вісь: уривки" off="Вісь: токени" />
               <LineChart series={tokenAxis ? [...curves, ...(meta?.research?.english ?? []).map((item) => ({ ...item, language: "en" as const }))] : curves} selected={selectedSize} tokens={tokenAxis ? meta?.research?.tokens : undefined} />
-              {tokenAxis && <p className="note">На осі «токени» українська база з 1 млн уривків — це {millions(meta!.research!.tokens.uk)} млн токенів, англійська — {millions(meta!.research!.tokens.en)} млн: українські уривки довші. Сіра пунктирна лінія — англійський контроль (HotpotQA, точний пошук). Різниця між кривими — це різниця двох бенчмарків, а не лише мов.</p>}
+              {tokenAxis && <p className="note">На осі «токени» українська база з 1 млн уривків — це {millions(meta!.research!.tokens.uk)} млн токенів, англійська — {millions(meta!.research!.tokens.en)} млн: українські уривки довші. Сірі лінії — англійський контроль (HotpotQA, точний пошук): суцільна — частка знайдених доказів (Recall@5), пунктирна — частка запитань, де знайдено хоча б один доказ (Hit@5). Різниця між кривими — це різниця двох бенчмарків, а не лише мов.</p>}
               <ul className="legend">
                 {curves.map((item, index) => {
                   const point = item.points.find((entry) => entry.size === selectedSize);
                   return <li key={item.method}><span style={{ background: COLORS[index % COLORS.length] }} />{item.label}: {point ? percent(point.recall) : "не вимірювалося"}</li>;
                 })}
               </ul>
-              <p className="note">Пунктир — додатковий аналіз після основного протоколу. Переранжування вимірювалося лише на 10 тис., 100 тис. і 1 млн.</p>
+              <p className="note">Кольоровий пунктир — додатковий аналіз після основного протоколу. Переранжування вимірювалося лише на 10 тис., 100 тис. і 1 млн.</p>
             </>
           )}
         </details>

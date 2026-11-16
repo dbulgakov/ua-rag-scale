@@ -70,7 +70,7 @@ All dense methods use `intfloat/multilingual-e5-small` (384 dimensions) with nor
 
 ## Metrics and statistics
 
-- **Retrieval.** Hit@k is 1 when at least one evidence passage is in the top k. Recall@k is the share of the question's evidence groups that have a passage in the top k. A Ukrainian question has one group, so Hit@k equals Recall@k; an English question has one group per supporting fact, two or more. MRR@10 is the reciprocal rank of the first evidence passage, so Hit@1 ≤ MRR@10 ≤ Hit@10. The two languages are compared on Hit@k; Recall@k and "all evidence in the top k" are the stricter metrics for the multi-hop English questions. Hit@k and "all evidence in the top five" are derived from the stored Recall@k (above zero, equal to one).
+- **Retrieval.** Recall@k is the share of the question's evidence groups that have a passage in the top k. A Ukrainian question has one group. An English question has one group per supporting fact, that is per supporting sentence of HotpotQA, 2 to 7 in the test set; a paragraph with several supporting sentences therefore weighs more. The two languages are compared on Recall@k, the chance of finding one given piece of evidence. Two bounds are reported next to it: Hit@k (at least one evidence passage in the top k) and "all evidence in the top k"; both are derived from the stored Recall@k (above zero, equal to one), and all three coincide for Ukrainian. MRR@10 is the reciprocal rank of the first evidence passage, so Hit@1 ≤ MRR@10 ≤ Hit@10.
 - **Other retrieval metrics.** Answer string in the top five passages, and ANN Recall@10 against exact search.
 - **Answers.** Exact match and token F1 after SQuAD-style normalization, plus exact match over lemmas, which forgives case endings.
 - **Uncertainty.** All intervals are 95% percentile intervals from a paired cluster bootstrap with 1,000 resamples and seed 271828. A cluster is a connected component of questions that share an evidence article, so questions about one article are resampled together. Method differences are computed on the same questions.
@@ -121,7 +121,8 @@ The router sends a query to an expensive method (reranking or graph) only when a
 - Questions are translations written from a source paragraph, and evidence was selected by LLM judges, not by people.
 - The encoder was trained on SQuAD and HotpotQA, and part of the Ukrainian test questions are translations of SQuAD training questions.
 - The Ukrainian test set has 41 article clusters, so intervals are wide.
-- The Ukrainian and English results compare two benchmarks, not two languages: passage length, question type and encoder exposure all differ.
+- The Ukrainian and English results compare two benchmarks, not two languages: passage length, question type, the number of evidence pieces and encoder exposure all differ. The Ukrainian curve is steeper by Recall@5 and Hit@5 but not by "all evidence in the top five".
+- English evidence is counted per supporting sentence. A paragraph-level recall cannot be computed without new rankings: `results/` keeps the share of evidence found, not the full lists of retrieved passages.
 - Latency depends on hardware.
 - The provider's generator does not repeat its answers exactly at temperature 0, so the significance of borderline answer-metric differences on 200 questions is unstable between runs.
 - IVF-PQ differs slightly between platforms, by less than its spread over seeds.

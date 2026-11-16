@@ -413,6 +413,7 @@ def headline(
         for metric, name in (("hit_5", "hit"), ("recall_5", "recall"), ("all_support_5", "all")):
             exact = results.curve(language, metric=metric)
             exact = exact[exact["method"] == "exact"].set_index("size")[metric]
+            values[f"{language}_{name}_start"] = exact[config.sizes[0]]
             values[f"{language}_{name}_drop"] = exact[config.sizes[0]] - exact[config.sizes[-1]]
         compared = [
             ("graph", "hnsw"),
@@ -539,27 +540,40 @@ def figures(results: Results, reports: dict[str, dict]) -> None:
     figure, axes = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
     tokens, axis_tokens = plt.subplots(figsize=(7, 4))
     for axis, language in zip(axes, LANGUAGES, strict=True):
-        curve = results.curve(language, metric="hit_5")
+        curve = results.curve(language)
         for method in shown:
             part = curve[curve["method"] == method].sort_values("size")
-            axis.plot(part["size"], part["hit_5"], marker="o", label=METHOD[method])
+            axis.plot(part["size"], part["recall_5"], marker="o", label=METHOD[method])
         axis.set(xscale="log", title=LANGUAGE[language], xlabel="уривків у корпусі")
         axis.grid(alpha=0.3)
         counts = results.corpus[language]["tokens"]
-        for method, style in (("exact", "-"), ("hnsw", "--")):
+        for method, style in (("exact", "-"), ("hnsw", ":")):
             part = curve[curve["method"] == method].sort_values("size")
             axis_tokens.plot(
                 [counts[str(size)] for size in part["size"]],
-                part["hit_5"],
+                part["recall_5"],
                 style,
                 marker="o",
                 label=f"{LANGUAGE[language]}, {METHOD[method]}",
             )
-    axes[0].set_ylabel("Hit@5, test")
+        if not results.single_evidence(language):
+            hit = results.curve(language, metric="hit_5")
+            hit = hit[hit["method"] == "exact"].sort_values("size")
+            label = f"{METHOD['exact']}, Hit@5"
+            axis.plot(hit["size"], hit["hit_5"], "--", color="gray", marker="o", label=label)
+            axis_tokens.plot(
+                [counts[str(size)] for size in hit["size"]],
+                hit["hit_5"],
+                "--",
+                color="gray",
+                marker="o",
+                label=f"{LANGUAGE[language]}, {label}",
+            )
+    axes[0].set_ylabel("Recall@5, test")
     axes[1].legend()
     figure.tight_layout()
     figure.savefig(folder / "degradation.svg", metadata={"Date": None})
-    axis_tokens.set(xscale="log", xlabel="токенів e5 у корпусі", ylabel="Hit@5, test")
+    axis_tokens.set(xscale="log", xlabel="токенів e5 у корпусі", ylabel="Recall@5, test")
     axis_tokens.grid(alpha=0.3)
     axis_tokens.legend()
     tokens.tight_layout()
@@ -577,14 +591,15 @@ def figures(results: Results, reports: dict[str, dict]) -> None:
 
 
 def demo_data(results: Results, reports: dict[str, dict], values: dict[str, str]) -> dict:
-    def series(language: str, methods: list[str]) -> list[dict]:
-        curve = results.curve(language, metric="hit_5")
+    def series(language: str, methods: list[str], metric: str = "recall_5") -> list[dict]:
+        curve = results.curve(language, metric=metric)
         return [
             {
                 "method": method,
                 "label": METHOD[method],
+                "dashed": metric != "recall_5",
                 "points": [
-                    {"size": int(row.size), "recall": row.hit_5}
+                    {"size": int(row.size), "recall": getattr(row, metric)}
                     for row in curve[curve["method"] == method].sort_values("size").itertuples()
                 ],
             }
@@ -594,7 +609,7 @@ def demo_data(results: Results, reports: dict[str, dict], values: dict[str, str]
     template = json.loads((TEMPLATES / "recommendations_uk.json").read_text())
     return {
         "curves": series("uk", ["exact", "hnsw", "hybrid", "graph", "rerank", "hybrid_lemma"]),
-        "english": series("en", ["exact"]),
+        "english": series("en", ["exact"]) + series("en", ["exact"], "hit_5"),
         "tokens": {language: results.corpus[language]["tokens"] for language in LANGUAGES},
         "router": [
             {"share": row.expensive_share, "recall": row.recall_5, "random": row.random}
@@ -633,10 +648,10 @@ def write_report(config: Config) -> None:
             if method not in ("hnsw", "rerank_top50") and method in set(random["method"])
         ]
         values |= {
-            f"curves_{language}": curve_table(results, language, "random", "hit_5"),
-            f"curves_hard_{language}": curve_table(results, language, "hard", "hit_5"),
-            f"curves_recall_{language}": curve_table(results, language, "random", "recall_5"),
-            f"curves_recall_hard_{language}": curve_table(results, language, "hard", "recall_5"),
+            f"curves_{language}": curve_table(results, language, "random", "recall_5"),
+            f"curves_hard_{language}": curve_table(results, language, "hard", "recall_5"),
+            f"curves_hit_{language}": curve_table(results, language, "random", "hit_5"),
+            f"curves_hit_hard_{language}": curve_table(results, language, "hard", "hit_5"),
             f"definitions_{language}": definition_table(results, language),
             f"metrics_{language}": metric_table(results, language),
             f"methods_{language}": difference_table(random, config, methods, "hnsw"),
