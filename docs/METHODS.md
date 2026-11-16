@@ -125,4 +125,4 @@ The router sends a query to an expensive method (reranking or graph) only when a
 - English evidence is counted per supporting sentence. A paragraph-level recall cannot be computed without new rankings: `results/` keeps the share of evidence found, not the full lists of retrieved passages.
 - Latency depends on hardware.
 - The provider's generator does not repeat its answers exactly at temperature 0, so the significance of borderline answer-metric differences on 200 questions is unstable between runs.
-- IVF-PQ differs slightly between platforms, by less than its spread over seeds.
+- IVF-PQ differs slightly between platforms, by less than its spread over seeds. On one platform a second full run gave identical retrieval tables.

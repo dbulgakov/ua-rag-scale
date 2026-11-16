@@ -52,7 +52,7 @@ A GPU and about 20 GB of RAM are needed in practice; `--device cuda|mps|cpu` ove
 
 ## Reproducibility
 
-The tables in `results/` come from a full rerun of the published code on 2026-11-16: the retrieval stages on Google Colab (L4 GPU, high-RAM runtime, about 7 h 40 min) and generation on a laptop (about $1.3 through OpenRouter). The rerun was compared with the tables of the original run, which was computed on an Apple M3 Max and is kept in commit `57de63d`. The full comparison is in [results/gate_original_vs_recompute.txt](results/gate_original_vs_recompute.txt).
+The tables in `results/` come from full reruns of the published code on 2026-11-16. The first rerun took about 7 h 40 min on Google Colab for the retrieval stages (L4 GPU, high-RAM runtime) and about $1.3 through OpenRouter for generation on a laptop. It was compared with the tables of the original run, which was computed on an Apple M3 Max and is kept in commit `57de63d`. The full comparison is in [results/gate_original_vs_recompute.txt](results/gate_original_vs_recompute.txt).
 
 What matched:
 
@@ -68,7 +68,19 @@ What differed and why:
 - **LoRA** is trained again, which moves Recall@5 by up to 0.004. Hybrid search and reranking move by less than 0.002.
 - **Lemma hybrid** is now run with three seeds; the original run had seed 42 only.
 - **Headline numbers.** Of 360 fractions and percentages, 50 moved by more than 0.01 (one point for percentages); 49 of them are inside the 95% interval of the original run, and the last one is the law refit gap, which has no interval.
-- **Latency** was measured on the Colab machine and is not compared: index search on its CPU is 1.4–8 times slower than on the M3 Max, the reranker on the L4 is 3.3–4.5 times faster.
+- **Latency** was measured on the Colab machine and is not compared: index search on its CPU is 1.4–8 times slower than on the M3 Max, the reranker on the L4 is 3.3–4.8 times faster.
+
+### Second run on the same platform
+
+After nltk was updated from 3.9.2 to 3.10.4 because of security advisories, the whole pipeline was run once more on the same day, from a clean clone on the same kind of Colab runtime: first with `--sizes 10000` (5 h 35 min), then the remaining sizes (3 h 41 min). The comparison is in [results/gate_recompute_vs_rerun.txt](results/gate_recompute_vs_rerun.txt).
+
+- **Retrieval repeats exactly.** All 745,668 per-question rows are identical, including IVF-PQ, the retrained LoRA adapter and reranking. The mean training loss of the adapter differs in the ninth decimal place.
+- **Answers come from the cache.** The retrieved passages, and so every generation prompt, are identical, and no new request was sent to the provider. The share of repeated answers above therefore describes the first rerun only.
+- **The library update changes nothing.** WordNet lemmas of all 1,007,676 English tokens of the corpus, questions and answers are the same with both nltk versions.
+- **Latency** was measured again and is the only table that changed: single-query medians differ from the first rerun by a factor of 0.41 to 1.38, with a median of 1.02. The latency numbers in the report come from the second run.
+- **A clean clone of the previous lock file** run with `--sizes 10000` (5 h 39 min) also gave the published rows for that size.
+
+Library versions are pinned in `uv.lock`: torch 2.15.0, faiss-cpu 1.16.0, sentence-transformers 6.3.0, transformers 5.23.0, peft 0.21.3, bm25s 0.3.16, pymorphy3 2.0.6, nltk 3.10.4, scikit-learn 1.9.1 and numpy 2.5.4, on Python 3.12 or 3.13.
 
 ## Layout
 

@@ -1,0 +1,84 @@
+Gate: tables of the full recompute (nltk 3.9.2) against the rerun on the updated lock (nltk 3.10.4)
+============================================================================================
+'published' is the full recompute of 2026-11-16 as it stood in results/ before the rerun;
+'rerun' is a second full run of the same day from a clean clone, with nltk 3.10.4.
+Rule. Every headline number stays within 0.01 (one point for percentages) or inside the 95%
+interval of the published run, and no conclusion flips: sign and significance of paired
+differences, law against the last-value forecast, router against random routing.
+Both runs were computed on Google Colab (L4 GPU); latency is listed but not gated.
+Marks: '+' interval above zero, '-' below zero, '0' interval contains zero.
+
+1. Paired differences in headline.json: sign and significance
+--------------------------------------------------------------------------------------------
+retrieval   compared  56   same mark  56   changed mark  0   changed sign 0
+router      compared   2   same mark   2   changed mark  0   changed sign 0
+generation  compared  18   same mark  18   changed mark  0   changed sign 0
+
+2. Report tables: every cell with a significance mark or an interval-hit mark
+--------------------------------------------------------------------------------------------
+cells compared 331   same mark 331   changed mark 0
+
+3. Degradation law: registered forecast against the observation at 1 million passages
+--------------------------------------------------------------------------------------------
+  block                   log-linear    power  last-value   law beats last-value
+  ua random    published       0.055    0.042       0.104   yes, yes
+  ua random    rerun           0.055    0.042       0.104   yes, yes
+  ua hard      published       0.054    0.095       0.024   no, no
+  ua hard      rerun           0.054    0.095       0.024   no, no
+  en random    published       0.027    0.015       0.068   yes, yes
+  en random    rerun           0.027    0.015       0.068   yes, yes
+  en hard      published       0.037    0.092       0.022   no, no
+  en hard      rerun           0.037    0.092       0.022   no, no
+  observations inside the forecast interval, of 36:
+    log-linear  20 -> 20
+    power       20 -> 20
+  largest gap between a refit on the measured curves and the registered forecast: 0.0101 -> 0.0101
+
+4. Headline numbers
+--------------------------------------------------------------------------------------------
+data counts (questions, articles, passages, tokens): 26 of 26 identical
+fractions and percentages compared: 370
+moved by more than the tolerance: 0
+  inside the 95% interval of the published run: 0
+  outside or without an interval: 0
+outcome counts that changed: 0
+
+5. Retrieval tables: Recall@5 on test questions, cells present in both runs
+--------------------------------------------------------------------------------------------
+rows: published 745668, rerun 745668; cells in both runs: 606
+  method          largest shift, one seed   largest shift, seed mean  seed spread, published
+  adaptive                         0.0000                     0.0000                  0.0152
+  exact                            0.0000                     0.0000                  0.0108
+  finetuned                        0.0000                     0.0000                  0.0217
+  graph                            0.0000                     0.0000                  0.0419
+  graph_exact                      0.0000                     0.0000                  0.0406
+  graph_no_ppr                     0.0000                     0.0000                  0.0122
+  hnsw                             0.0000                     0.0000                  0.0108
+  hybrid                           0.0000                     0.0000                  0.0149
+  hybrid_lemma                     0.0000                     0.0000                  0.0298
+  ivfpq                            0.0000                     0.0000                  0.0528
+  rerank                           0.0000                     0.0000                  0.0135
+  rerank_top50                     0.0000                     0.0000                  0.0041
+per-question rows in both runs: 745668; identical Recall@1/5/10/20 and MRR@10: 745668
+
+6. Answers
+--------------------------------------------------------------------------------------------
+Every prompt of the rerun was already in the answer cache of the recompute, because the retrieved
+passages are identical. No new request was sent to the provider or to the local model.
+provider answers taken from the cache: 100.0% of 10400
+  en no_rag  100.0% of 200
+  en oracle  100.0% of 200
+  en rag     100.0% of 4800
+  ua no_rag  100.0% of 200
+  ua oracle  100.0% of 200
+  ua rag     100.0% of 4800
+local control (Qwen3-4B, MLX) taken from the cache: 100.0% of 1000 answers
+
+Latency (not gated): median single-query time, rerun divided by published
+  63 cells; smallest ratio 0.41, median 1.02, largest 1.38
+
+7. Outcome
+--------------------------------------------------------------------------------------------
+changed marks in headline.json: 0; changed marks in report tables: 0; law verdict flips: 0
+numbers outside the tolerance and the interval: 0; data counts identical: True
+GATE PASSED
