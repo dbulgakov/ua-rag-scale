@@ -112,16 +112,20 @@ def cluster_interval(
     return float(result.confidence_interval.low), float(result.confidence_interval.high)
 
 
-def curves(scored: pd.DataFrame, config: Config) -> pd.DataFrame:
+def with_hits(scored: pd.DataFrame) -> pd.DataFrame:
+    recall = {k: scored[f"recall_{k}"] for k in RECALL_AT}
+    hits = {f"hit_{k}": (found > 0).astype(float).where(found.notna()) for k, found in recall.items()}
+    return scored.assign(**hits, all_support_5=(recall[5] == 1).astype(float).where(recall[5].notna()))
+
+
+def curves(scored: pd.DataFrame, config: Config, metric: str = "recall_5") -> pd.DataFrame:
     keys = ["order", "method", "size"]
     rows = []
-    for values, frame in scored[scored["recall_5"].notna()].groupby(keys):
-        question = frame.groupby("question_id").agg(value=("recall_5", "mean"), cluster=("cluster", "first"))
+    for values, frame in scored[scored[metric].notna()].groupby(keys):
+        question = frame.groupby("question_id").agg(value=(metric, "mean"), cluster=("cluster", "first"))
         low, high = cluster_interval(question["value"].to_numpy(), question["cluster"].to_numpy(), config)
-        rows.append(
-            dict(zip(keys, values, strict=True))
-            | {"recall_5": question["value"].mean(), "low": low, "high": high}
-        )
+        cell = {metric: question["value"].mean(), "low": low, "high": high}
+        rows.append(dict(zip(keys, values, strict=True)) | cell)
     return pd.DataFrame(rows)
 
 

@@ -15,7 +15,7 @@ from sklearn.metrics import cohen_kappa_score
 from raglab import law, router
 from raglab.config import LANGUAGES, Config
 from raglab.data.corpus import SPLITS
-from raglab.evaluate import cluster_interval, curves, paired_difference
+from raglab.evaluate import cluster_interval, curves, paired_difference, with_hits
 
 TEMPLATES = Path(__file__).parent / "templates"
 
@@ -38,14 +38,20 @@ METHOD = {
     "rerank_scoring": "Оцінювання переранжувальником",
 }
 METRIC = {
+    "hit_1": "Hit@1",
+    "hit_5": "Hit@5",
+    "hit_10": "Hit@10",
+    "hit_20": "Hit@20",
+    "mrr_10": "MRR@10",
     "recall_1": "Recall@1",
     "recall_5": "Recall@5",
     "recall_10": "Recall@10",
     "recall_20": "Recall@20",
-    "mrr_10": "MRR@10",
+    "all_support_5": "Усі докази в топ-5",
     "all_support_10": "Усі докази в топ-10",
     "answer_in_top5": "Відповідь у топ-5",
 }
+SHARE = ("recall_1", "recall_5", "recall_10", "recall_20", "all_support_5", "all_support_10")
 ANSWER_METRIC = {"em": "EM", "f1": "F1", "em_lemma": "EM за лемами"}
 PART = {"fit": "навчання", "calibration": "калібрування", "selection": "вибір порога", "test": "оцінка"}
 POLICY = {
@@ -73,17 +79,21 @@ class Results:
     questions: pd.DataFrame
     corpus: dict
     finetune: dict
-    cache: dict[str, pd.DataFrame] = field(default_factory=dict)
+    cache: dict[tuple[str, str], pd.DataFrame] = field(default_factory=dict)
 
     def test(self, language: str, order: str | None = "random") -> pd.DataFrame:
         frame = self.retrieval[(self.retrieval["language"] == language) & (self.retrieval["split"] == "test")]
         return frame if order is None else frame[frame["order"] == order]
 
-    def curve(self, language: str, order: str | None = "random") -> pd.DataFrame:
-        if language not in self.cache:
-            self.cache[language] = curves(self.test(language, None), self.config)
-        table = self.cache[language]
+    def curve(self, language: str, order: str | None = "random", metric: str = "recall_5") -> pd.DataFrame:
+        if (language, metric) not in self.cache:
+            self.cache[language, metric] = curves(self.test(language, None), self.config, metric)
+        table = self.cache[language, metric]
         return table if order is None else table[table["order"] == order]
+
+    def single_evidence(self, language: str) -> bool:
+        test = self.test(language, None)
+        return bool((test["recall_5"].dropna() == test["hit_5"].dropna()).all())
 
     def answers(self, language: str, local: bool = False) -> pd.DataFrame:
         model = self.config.local_generator if local else self.config.generator
@@ -98,7 +108,7 @@ def load(config: Config) -> Results:
     keys = ["language", "question_id"]
     return Results(
         config,
-        pd.read_parquet(folder / "retrieval.parquet").merge(questions, on=keys),
+        with_hits(pd.read_parquet(folder / "retrieval.parquet")).merge(questions, on=keys),
         pd.concat(pd.read_parquet(path) for path in sorted(folder.glob("generation*.parquet"))).merge(
             questions[[*keys, "cluster"]], on=keys
         ),
@@ -140,14 +150,26 @@ def method_table(frame: pd.DataFrame, cells: list[str], methods: Iterable[str] =
     return markdown(table.rename_axis("Метод").reset_index())
 
 
-def curve_table(results: Results, language: str, order: str) -> str:
-    curve = results.curve(language, order)
-    return method_table(curve, intervals(curve, "recall_5"))
+def curve_table(results: Results, language: str, order: str, metric: str) -> str:
+    curve = results.curve(language, order, metric)
+    return method_table(curve, intervals(curve, metric))
+
+
+def definition_table(results: Results, language: str) -> str:
+    rows = []
+    for metric in ("hit_5", "recall_5", "all_support_5"):
+        curve = results.curve(language, metric=metric)
+        curve = curve[curve["method"] == "exact"].sort_values("size")
+        cells = dict(zip(curve["size"].map(SIZE), intervals(curve, metric), strict=True))
+        drop = curve[metric].iloc[0] - curve[metric].iloc[-1]
+        rows.append({"Метрика": METRIC[metric]} | cells | {"Втрата": number(drop)})
+    return markdown(pd.DataFrame(rows))
 
 
 def metric_table(results: Results, language: str) -> str:
     test = results.test(language)
-    table = test[test["method"] == "exact"].groupby("size")[list(METRIC)].mean().rename(columns=METRIC)
+    shown = [metric for metric in METRIC if not (metric in SHARE and results.single_evidence(language))]
+    table = test[test["method"] == "exact"].groupby("size")[shown].mean().rename(columns=METRIC)
     for method in ("hnsw", "ivfpq"):
         approximate = test[test["method"] == method].groupby("size")["ann_recall_10"].mean()
         table[f"ANN Recall@10, {METHOD[method]}"] = approximate
@@ -165,8 +187,10 @@ def differences(
     return pd.DataFrame(rows).dropna(subset=["difference"])
 
 
-def difference_table(frame: pd.DataFrame, config: Config, methods: list[str], baseline: str) -> str:
-    table = differences(frame, config, methods, baseline)
+def difference_table(
+    frame: pd.DataFrame, config: Config, methods: list[str], baseline: str, metric: str = "recall_5"
+) -> str:
+    table = differences(frame, config, methods, baseline, metric)
     return method_table(table, intervals(table, "difference", signed=True), methods)
 
 
@@ -353,7 +377,7 @@ def anchor_table(results: Results) -> str:
         row = {"Розмір": SIZE[int(size)]}
         for source, label in (("cus-qa", "CUS-QA"), ("benchmark", "Бенчмарк")):
             frame = part[part["source"] == source]
-            row[f"{label} R@5"] = mean_interval(frame, results.config, "recall_5")
+            row[f"{label} Hit@5"] = mean_interval(frame, results.config, "recall_5")
         rows.append(row)
     return markdown(pd.DataFrame(rows))
 
@@ -386,7 +410,10 @@ def headline(
         curve = results.curve(language).set_index(["method", "size"])["recall_5"]
         for (method, size), value in curve.items():
             values[f"{language}_{method}_{KEY[size]}"] = value
-        values[f"{language}_exact_drop"] = curve["exact", 10_000] - curve["exact", 1_000_000]
+        for metric, name in (("hit_5", "hit"), ("recall_5", "recall"), ("all_support_5", "all")):
+            exact = results.curve(language, metric=metric)
+            exact = exact[exact["method"] == "exact"].set_index("size")[metric]
+            values[f"{language}_{name}_drop"] = exact[config.sizes[0]] - exact[config.sizes[-1]]
         compared = [
             ("graph", "hnsw"),
             ("rerank", "hnsw"),
@@ -512,10 +539,10 @@ def figures(results: Results, reports: dict[str, dict]) -> None:
     figure, axes = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
     tokens, axis_tokens = plt.subplots(figsize=(7, 4))
     for axis, language in zip(axes, LANGUAGES, strict=True):
-        curve = results.curve(language)
+        curve = results.curve(language, metric="hit_5")
         for method in shown:
             part = curve[curve["method"] == method].sort_values("size")
-            axis.plot(part["size"], part["recall_5"], marker="o", label=METHOD[method])
+            axis.plot(part["size"], part["hit_5"], marker="o", label=METHOD[method])
         axis.set(xscale="log", title=LANGUAGE[language], xlabel="уривків у корпусі")
         axis.grid(alpha=0.3)
         counts = results.corpus[language]["tokens"]
@@ -523,16 +550,16 @@ def figures(results: Results, reports: dict[str, dict]) -> None:
             part = curve[curve["method"] == method].sort_values("size")
             axis_tokens.plot(
                 [counts[str(size)] for size in part["size"]],
-                part["recall_5"],
+                part["hit_5"],
                 style,
                 marker="o",
                 label=f"{LANGUAGE[language]}, {METHOD[method]}",
             )
-    axes[0].set_ylabel("Recall@5, test")
+    axes[0].set_ylabel("Hit@5, test")
     axes[1].legend()
     figure.tight_layout()
     figure.savefig(folder / "degradation.svg", metadata={"Date": None})
-    axis_tokens.set(xscale="log", xlabel="токенів e5 у корпусі", ylabel="Recall@5, test")
+    axis_tokens.set(xscale="log", xlabel="токенів e5 у корпусі", ylabel="Hit@5, test")
     axis_tokens.grid(alpha=0.3)
     axis_tokens.legend()
     tokens.tight_layout()
@@ -551,13 +578,13 @@ def figures(results: Results, reports: dict[str, dict]) -> None:
 
 def demo_data(results: Results, reports: dict[str, dict], values: dict[str, str]) -> dict:
     def series(language: str, methods: list[str]) -> list[dict]:
-        curve = results.curve(language)
+        curve = results.curve(language, metric="hit_5")
         return [
             {
                 "method": method,
                 "label": METHOD[method],
                 "points": [
-                    {"size": int(row.size), "recall": row.recall_5}
+                    {"size": int(row.size), "recall": row.hit_5}
                     for row in curve[curve["method"] == method].sort_values("size").itertuples()
                 ],
             }
@@ -606,17 +633,23 @@ def write_report(config: Config) -> None:
             if method not in ("hnsw", "rerank_top50") and method in set(random["method"])
         ]
         values |= {
-            f"curves_{language}": curve_table(results, language, "random"),
-            f"curves_hard_{language}": curve_table(results, language, "hard"),
+            f"curves_{language}": curve_table(results, language, "random", "hit_5"),
+            f"curves_hard_{language}": curve_table(results, language, "hard", "hit_5"),
+            f"curves_recall_{language}": curve_table(results, language, "random", "recall_5"),
+            f"curves_recall_hard_{language}": curve_table(results, language, "hard", "recall_5"),
+            f"definitions_{language}": definition_table(results, language),
             f"metrics_{language}": metric_table(results, language),
             f"methods_{language}": difference_table(random, config, methods, "hnsw"),
+            f"methods_hit_{language}": difference_table(random, config, methods, "hnsw", "hit_5"),
             f"graph_hard_{language}": difference_table(test[test["order"] == "hard"], config, graph, "hnsw"),
             f"generation_{language}": generation_table(results, language),
             f"latency_{language}": latency_table(results, language),
         }
     english = results.test("en")
     for kind in ("bridge", "comparison"):
-        values[f"graph_{kind}"] = difference_table(english[english["kind"] == kind], config, graph, "hnsw")
+        part = english[english["kind"] == kind]
+        values[f"graph_{kind}"] = difference_table(part, config, graph, "hnsw")
+        values[f"graph_hit_{kind}"] = difference_table(part, config, graph, "hnsw", "hit_5")
     demo = demo_data(results, reports, values)
     values["recommendations"] = markdown(
         pd.DataFrame(demo["recommendations"]).rename(

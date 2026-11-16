@@ -70,14 +70,15 @@ All dense methods use `intfloat/multilingual-e5-small` (384 dimensions) with nor
 
 ## Metrics and statistics
 
-- **Retrieval.** Recall@1/5/10/20 over evidence groups, MRR@10, coverage of all supporting facts (English), answer string in the top five passages, and ANN Recall@10 against exact search.
+- **Retrieval.** Hit@k is 1 when at least one evidence passage is in the top k. Recall@k is the share of the question's evidence groups that have a passage in the top k. A Ukrainian question has one group, so Hit@k equals Recall@k; an English question has one group per supporting fact, two or more. MRR@10 is the reciprocal rank of the first evidence passage, so Hit@1 ≤ MRR@10 ≤ Hit@10. The two languages are compared on Hit@k; Recall@k and "all evidence in the top k" are the stricter metrics for the multi-hop English questions. Hit@k and "all evidence in the top five" are derived from the stored Recall@k (above zero, equal to one).
+- **Other retrieval metrics.** Answer string in the top five passages, and ANN Recall@10 against exact search.
 - **Answers.** Exact match and token F1 after SQuAD-style normalization, plus exact match over lemmas, which forgives case endings.
 - **Uncertainty.** All intervals are 95% percentile intervals from a paired cluster bootstrap with 1,000 resamples and seed 271828. A cluster is a connected component of questions that share an evidence article, so questions about one article are resampled together. Method differences are computed on the same questions.
 - **Seeds** are not independent samples: per-question values are averaged over seeds before resampling.
 
 ## Degradation law
 
-Two forms are fitted to Recall@5 at 10, 30, 100 and 300 thousand passages:
+Two forms are fitted to Recall@5 (for English the share of evidence groups found, not Hit@5) at 10, 30, 100 and 300 thousand passages:
 
 - log-linear: `Recall@5 = a − b·log10(N)`;
 - power: `1 − Recall@5 = c·N^d`.
@@ -97,7 +98,7 @@ The forecasts for 1 million passages with bootstrap intervals were written to `r
 The router sends a query to an expensive method (reranking or graph) only when a cheap probe suggests it will help.
 
 - **Features.** From the HNSW top-50: score gaps between ranks 1–2, 1–10 and 1–50, entropy of the scores, number of distinct articles in the top 10 and top 20, and the logarithm of the corpus size.
-- **Label.** The expensive method improves Recall@5 by at least 0.01.
+- **Label.** The expensive method improves Recall@5 by at least 0.01. Labels and policy quality use Recall@5, which for English is the share of evidence groups found.
 - **Models.** Logistic regression and gradient boosting, each with Platt calibration.
 - **Splits without leakage.** Ukrainian: fit on train, calibrate and choose the threshold on two disjoint halves of the tune articles, evaluate on test. English: fit, calibration and selection are disjoint parts of tune. No article cluster is shared between parts.
 - **Threshold.** The highest-quality threshold on the selection part that sends at most 25% of queries to an expensive method.

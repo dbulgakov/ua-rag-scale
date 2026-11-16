@@ -5,7 +5,7 @@ Small tables written by the pipeline. `raglab report` reads them and writes `rep
 | File | Content | Written by |
 |---|---|---|
 | `questions.parquet` | Question id, split, article cluster, question type, low-specificity flag | `raglab grid` |
-| `retrieval.parquet` | One row per question, method, corpus size, growth order and seed: Recall@1/5/10/20, MRR@10, answer in top five, ANN recall, and the router features of the HNSW probe | `raglab grid`, `raglab rerank` |
+| `retrieval.parquet` | One row per question, method, corpus size, growth order and seed: Recall@1/5/10/20 (share of evidence groups found; Hit@k is Recall@k above zero), MRR@10, answer in top five, ANN recall, and the router features of the HNSW probe | `raglab grid`, `raglab rerank` |
 | `retrieved.parquet` | Top passages of each method for the 200 generation questions | `raglab grid`, `raglab rerank` |
 | `latency.parquet` | Median single-query latency per method and size | `raglab grid --latency`, `raglab rerank --latency` |
 | `generation.parquet`, `generation-local.parquet` | One row per answer: condition, method, size, answer, EM, F1, lemma EM, evidence in the prompt; the second file is the local MLX control | `raglab generate`, `raglab generate --local` |

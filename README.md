@@ -4,14 +4,16 @@ How fast does retrieval quality in a RAG system fall as the corpus grows, and wh
 
 This repository measures retrieval and answer quality on nested Wikipedia corpora from 10 thousand to 1 million passages, compares ten retrieval methods, and tests three ideas: a Ukrainian benchmark with evidence in native Wikipedia text, a degradation law registered before the 1-million measurement, and a query router that pays for an expensive method only when a cheap probe says it will help. Ukrainian Wikipedia is the main experiment; English HotpotQA is a control.
 
-![Recall@5 against corpus size](reports/figures/degradation.svg)
+![Hit@5 against corpus size](reports/figures/degradation.svg)
+
+Hit@k is the share of questions with at least one evidence passage in the top k; Recall@k is the share of a question's evidence found in the top k. A Ukrainian question has one piece of evidence, so the two coincide; an English HotpotQA question has two or more, and the languages are compared on Hit@k.
 
 ## Findings
 
-1. **Retrieval degrades for every method.** Exact search loses 0.25 Recall@5 on the Ukrainian benchmark and 0.17 on the English one between 10 thousand and 1 million passages.
+1. **Retrieval degrades for every method.** Between 10 thousand and 1 million passages exact search loses 0.25 Hit@5 on the Ukrainian benchmark and 0.06 on the English one. The stricter English metrics lose more: 0.17 for Recall@5 and 0.29 for all evidence in the top five.
 2. **The loss comes from retrieval, not from reading.** When the evidence is in the prompt, the generator fails equally often at every corpus size.
-3. **Reranking and a lemmatized BM25 hybrid help.** At 1 million Ukrainian passages reranking reaches 0.58 Recall@5 against 0.45 for HNSW; the hybrid with lemmas reaches 0.52 without a cross-encoder.
-4. **Hyperlink-graph expansion and a LoRA-tuned encoder do not.** On the Ukrainian benchmark the graph gives a significant gain at one corpus size only, and on the English one only for bridge questions, which were built by following a link; the adapter makes retrieval worse in both languages.
+3. **Reranking and a lemmatized BM25 hybrid help.** At 1 million Ukrainian passages reranking reaches 0.58 Hit@5 against 0.45 for HNSW; the hybrid with lemmas reaches 0.52 without a cross-encoder.
+4. **Hyperlink-graph expansion and a LoRA-tuned encoder do not.** On the Ukrainian benchmark the graph gives a significant gain at one corpus size only, and on the English one it adds further evidence (Recall@5) only for bridge questions, which were built by following a link, and barely changes Hit@5; the adapter makes retrieval worse in both languages.
 5. **A router recovers about half to two thirds of the reranking gain for a third to half of its latency**, and beats random routing with the same budget.
 6. **The registered law is a fair forecast for random growth and a poor one for adversarial growth**, where a naive last-value forecast is closer.
 

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from raglab.config import Config
+from raglab.config import ROOT, Config
 from raglab.data.specificity import Lemmatizer, tokens
 from raglab.evaluate import (
     answer_scores,
@@ -11,6 +11,7 @@ from raglab.evaluate import (
     normalize_answer,
     paired_difference,
     retrieval_scores,
+    with_hits,
 )
 
 
@@ -21,6 +22,24 @@ def test_retrieval_scores_use_evidence_groups() -> None:
     assert scores["mrr_10"] == 0.25
     assert scores["all_support_10"] == 0.0
     assert scores["ann_recall_10"] == 1.0
+
+
+def test_hits_follow_from_recall() -> None:
+    scores = retrieval_scores([7, 3, 9, 1, 5, 2], [{1, 4}, {8}])
+    row = with_hits(pd.DataFrame([scores])).iloc[0]
+    assert [row["hit_1"], row["hit_5"], row["all_support_5"]] == [0.0, 1.0, 0.0]
+    assert row["hit_1"] <= row["mrr_10"] <= row["hit_10"]
+
+
+def test_published_metrics_keep_their_order() -> None:
+    table = with_hits(pd.read_parquet(ROOT / "results/retrieval.parquet"))
+    table = table.dropna(subset=["recall_5", "mrr_10"])
+    assert (table["hit_1"] <= table["mrr_10"]).all()
+    assert (table["mrr_10"] <= table["hit_10"]).all()
+    assert (table["all_support_5"] <= table["recall_5"]).all()
+    assert (table["recall_5"] <= table["hit_5"]).all()
+    ukrainian = table[table["language"] == "uk"]
+    assert (ukrainian["hit_5"] == ukrainian["recall_5"]).all()
 
 
 def test_answer_scores_follow_squad_rules() -> None:
