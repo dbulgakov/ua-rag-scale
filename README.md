@@ -32,7 +32,7 @@ export OPENROUTER_API_KEY=...   # only for the generation stage, about $1.3
 uv run raglab run all
 ```
 
-`--out <dir>` moves `work/`, `results/` and `reports/` to another directory.
+`--out <dir>` moves `work/`, `results/` and `reports/` to another directory. `--sizes 10000` limits the retrieval grid, reranking and latency to the given corpus sizes (repeat the option for several) as a quick check: the pools are still built and encoded in full, and the report needs all five sizes.
 
 | Stage | Command | What it does |
 |---|---|---|

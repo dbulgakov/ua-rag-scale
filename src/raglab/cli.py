@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 from typing import Annotated
 
@@ -14,6 +15,24 @@ app.add_typer(run, name="run", help="Run several stages in order.")
 
 Out = Annotated[Path, typer.Option(help="Directory that receives work/ and results/.")]
 Device = Annotated[str | None, typer.Option(help="cuda, mps or cpu; detected when omitted.")]
+Sizes = Annotated[
+    list[int] | None,
+    typer.Option(help="Measure only these corpus sizes; repeat the option for several."),
+]
+
+
+def configure(out: Path, device: str | None = None, sizes: list[int] | None = None) -> Config:
+    config = Config(out=out, device=device)
+    if not sizes:
+        return config
+    unknown = sorted(set(sizes) - set(config.sizes))
+    if unknown:
+        raise typer.BadParameter(f"{unknown} is not among {list(config.sizes)}", param_hint="--sizes")
+    return replace(
+        config,
+        sizes=tuple(size for size in config.sizes if size in sizes),
+        rerank_sizes=tuple(size for size in config.rerank_sizes if size in sizes),
+    )
 
 
 @app.command(help="Build both 1M passage pools, questions and link graphs from the raw sources.")
@@ -42,25 +61,25 @@ def finetune(out: Out = ROOT, device: Device = None) -> None:
 
 
 @app.command(help="Run every retrieval method on every corpus size, growth order and seed.")
-def grid(out: Out = ROOT, latency: bool = False) -> None:
+def grid(out: Out = ROOT, latency: bool = False, sizes: Sizes = None) -> None:
     from raglab.evaluate import collect
     from raglab.grid import measure_latency, run_grid
 
-    config = Config(out=out)
+    config = configure(out, sizes=sizes)
     for language in LANGUAGES:
         (measure_latency if latency else run_grid)(config, language)
-    collect(config)
+    collect(Config(out=out))
 
 
 @app.command(help="Rerank HNSW candidates with the cross-encoder.")
-def rerank(out: Out = ROOT, device: Device = None, latency: bool = False) -> None:
+def rerank(out: Out = ROOT, device: Device = None, latency: bool = False, sizes: Sizes = None) -> None:
     from raglab import rerank as stage
     from raglab.evaluate import collect
 
-    config = Config(out=out, device=device)
+    config = configure(out, device, sizes)
     for language in LANGUAGES:
         (stage.measure_latency if latency else stage.rerank)(config, language)
-    collect(config)
+    collect(Config(out=out))
 
 
 @app.command(
@@ -88,16 +107,18 @@ def serve(out: Out = ROOT, port: int = 8010) -> None:
 
 
 @run.command("all", help="Run the whole pipeline; finished stages and cells are skipped.")
-def run_all(out: Out = ROOT, device: Device = None, max_cost: float = 3.0) -> None:
+def run_all(out: Out = ROOT, device: Device = None, max_cost: float = 3.0, sizes: Sizes = None) -> None:
+    configure(out, device, sizes)
     hardware = ["--device", device] if device else []
+    selected = [argument for size in sizes or [] for argument in ("--sizes", str(size))]
     stages = [
         ["data"],
         ["embed", *hardware],
         ["finetune", *hardware],
-        ["grid"],
-        ["rerank", *hardware],
-        ["grid", "--latency"],
-        ["rerank", "--latency", *hardware],
+        ["grid", *selected],
+        ["rerank", *hardware, *selected],
+        ["grid", "--latency", *selected],
+        ["rerank", "--latency", *hardware, *selected],
     ]
     if os.environ.get("OPENROUTER_API_KEY"):
         stages.append(["generate", "--max-cost", str(max_cost)])
@@ -105,7 +126,9 @@ def run_all(out: Out = ROOT, device: Device = None, max_cost: float = 3.0) -> No
         typer.echo("OPENROUTER_API_KEY is not set: the generation stage is skipped.")
     for stage in stages:
         subprocess.run([sys.executable, "-m", "raglab.cli", *stage, "--out", str(out)], check=True)
-    if (Config(out=out).results / "generation.parquet").exists():
+    if sizes:
+        typer.echo("The report needs every corpus size and is skipped.")
+    elif (Config(out=out).results / "generation.parquet").exists():
         report(out)
 
 
