@@ -42,6 +42,13 @@ def test_published_metrics_keep_their_order() -> None:
     assert (ukrainian["hit_5"] == ukrainian["recall_5"]).all()
 
 
+def test_evidence_group_counts_match_the_documentation() -> None:
+    questions = pd.read_parquet(ROOT / "results/questions.parquet")
+    test = questions[questions["split"] == "test"].groupby("language")["n_groups"].agg(["min", "max"])
+    assert test.loc["uk"].tolist() == [1, 1]
+    assert test.loc["en"].tolist() == [2, 7]
+
+
 def test_answer_scores_follow_squad_rules() -> None:
     assert answer_scores("The Eiffel Tower.", ["Eiffel Tower"], "en") == (1.0, 1.0)
     assert answer_scores("yes", ["no"], "en") == (0.0, 0.0)

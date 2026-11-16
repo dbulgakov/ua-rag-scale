@@ -91,9 +91,12 @@ class Results:
         table = self.cache[language, metric]
         return table if order is None else table[table["order"] == order]
 
+    def groups(self, language: str) -> pd.Series:
+        questions = self.questions[self.questions["language"] == language]
+        return questions[questions["split"] == "test"]["n_groups"]
+
     def single_evidence(self, language: str) -> bool:
-        test = self.test(language, None)
-        return bool((test["recall_5"].dropna() == test["hit_5"].dropna()).all())
+        return bool((self.groups(language) == 1).all())
 
     def answers(self, language: str, local: bool = False) -> pd.DataFrame:
         model = self.config.local_generator if local else self.config.generator
@@ -490,6 +493,9 @@ def headline(
         counts = results.questions[results.questions["language"] == language]["split"].value_counts()
         values |= {f"{language}_{split}_n": int(counts[split]) for split in SPLITS}
         values[f"{language}_clusters_n"] = test["cluster"].nunique()
+        groups = results.groups(language)
+        values[f"{language}_groups_min_n"] = int(groups.min())
+        values[f"{language}_groups_max_n"] = int(groups.max())
     local = results.answers("uk", local=True)
     for (condition, _, size), part in local.groupby(["condition", "method", "size"], dropna=False):
         values[f"local_em_{condition if condition != 'rag' else KEY[int(size)]}"] = part["em"].mean()

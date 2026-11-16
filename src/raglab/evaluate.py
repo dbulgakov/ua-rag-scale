@@ -233,7 +233,8 @@ def collect(config: Config) -> None:
     for language in LANGUAGES:
         corpus = Corpus(config, language)
         columns = ["id", "split", "cluster", "kind", "low_specificity"]
-        questions.append(corpus.questions[columns].assign(language=language))
+        groups = corpus.questions["gold"].map(len)
+        questions.append(corpus.questions[columns].assign(language=language, n_groups=groups))
         metrics.append(cell_tables(corpus, "metrics"))
         sample = shuffled(corpus.split("test")["id"], "stage-d")[: config.generation_questions]
         order, seed = config.probe_cell
