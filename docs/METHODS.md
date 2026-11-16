@@ -122,3 +122,5 @@ The router sends a query to an expensive method (reranking or graph) only when a
 - The Ukrainian test set has 41 article clusters, so intervals are wide.
 - The Ukrainian and English results compare two benchmarks, not two languages: passage length, question type and encoder exposure all differ.
 - Latency depends on hardware.
+- The provider's generator does not repeat its answers exactly at temperature 0, so the significance of borderline answer-metric differences on 200 questions is unstable between runs.
+- IVF-PQ differs slightly between platforms, by less than its spread over seeds.

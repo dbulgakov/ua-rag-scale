@@ -15,4 +15,4 @@ Small tables written by the pipeline. `raglab report` reads them and writes `rep
 | `headline.json` | Every number quoted in the report, with intervals | `raglab report` |
 | `demo.json` | Curves and recommendations shown by the demo | `raglab report` |
 
-The tables in this folder come from the original run of the project, converted to this layout (`retrieved.parquet` was not kept). They are replaced when the pipeline is rerun.
+The tables come from the full run of 2026-11-16: retrieval stages on Google Colab, generation locally. `gate_v1_vs_recompute.txt` compares them with the tables of the original run (commit `57de63d`); the summary is in the Reproducibility section of the main README.

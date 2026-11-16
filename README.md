@@ -11,7 +11,7 @@ This repository measures retrieval and answer quality on nested Wikipedia corpor
 1. **Retrieval degrades for every method.** Exact search loses 0.25 Recall@5 on the Ukrainian benchmark and 0.17 on the English one between 10 thousand and 1 million passages.
 2. **The loss comes from retrieval, not from reading.** When the evidence is in the prompt, the generator fails equally often at every corpus size.
 3. **Reranking and a lemmatized BM25 hybrid help.** At 1 million Ukrainian passages reranking reaches 0.58 Recall@5 against 0.45 for HNSW; the hybrid with lemmas reaches 0.52 without a cross-encoder.
-4. **Hyperlink-graph expansion and a LoRA-tuned encoder do not.** The graph gives a significant gain at one corpus size only; the adapter makes retrieval worse.
+4. **Hyperlink-graph expansion and a LoRA-tuned encoder do not.** On the Ukrainian benchmark the graph gives a significant gain at one corpus size only, and on the English one only for bridge questions, which were built by following a link; the adapter makes retrieval worse in both languages.
 5. **A router recovers about half to two thirds of the reranking gain for a third to half of its latency**, and beats random routing with the same budget.
 6. **The registered law is a fair forecast for random growth and a poor one for adversarial growth**, where a naive last-value forecast is closer.
 
@@ -28,7 +28,7 @@ uv run raglab report            # rebuild the report and figures from results/ i
 The whole pipeline is one command; finished stages and cells are skipped on restart:
 
 ```sh
-export OPENROUTER_API_KEY=...   # only for the generation stage, about $1.5
+export OPENROUTER_API_KEY=...   # only for the generation stage, about $1.3
 uv run raglab run all
 ```
 
@@ -46,7 +46,27 @@ uv run raglab run all
 | Report | `raglab report` | Tables, intervals, law check, router, figures |
 | Demo | `raglab serve` | Ukrainian question answering with an HNSW walk-through (build the page first: `cd web && pnpm install && pnpm build`) |
 
-A GPU and about 20 GB of RAM are needed in practice; `--device cuda|mps|cpu` overrides the detected device. [notebooks/colab.ipynb](notebooks/colab.ipynb) runs the retrieval stages on Google Colab without any secret and downloads `results/` after each stage. Generation then runs locally: `raglab data` rebuilds the passage texts, `raglab generate` answers, `raglab report` writes the report.
+A GPU and about 20 GB of RAM are needed in practice; `--device cuda|mps|cpu` overrides the detected device. [notebooks/colab.ipynb](notebooks/colab.ipynb) runs the retrieval stages on Google Colab without any secret; every stage leaves an archive of `results/` in `/content`, and the last cell downloads the final one. Generation then runs locally: `raglab data` rebuilds the passage texts, `raglab generate` answers, `raglab report` writes the report.
+
+## Reproducibility
+
+The tables in `results/` come from a full rerun of the published code on 2026-11-16: the retrieval stages on Google Colab (L4 GPU, high-RAM runtime, about 7 h 40 min) and generation on a laptop (about $1.3 through OpenRouter). The rerun was compared with the tables of the original run, which was computed on an Apple M3 Max and is kept in commit `57de63d`. The full comparison is in [results/gate_v1_vs_recompute.txt](results/gate_v1_vs_recompute.txt).
+
+What matched:
+
+- **Data.** Corpora, pools, link graphs and question sets: all 22 data counts are identical.
+- **Deterministic retrieval.** Exact search, HNSW, adaptive HNSW, the three graph variants and the lemma hybrid give identical Recall@5 in every cell that both runs have.
+- **Conclusions about retrieval.** All 56 paired retrieval differences and both router-versus-random differences keep their sign and significance; the law-versus-last-value verdict is the same in all four blocks.
+- **Local control.** The MLX model repeats all 1,000 answers word for word, so the prompts are the same.
+
+What differed and why:
+
+- **Generator.** The provider does not repeat its answers at temperature 0 with a fixed seed: 84% of 10,400 answers are identical (55.5% and 75.5% of the no-retrieval answers, where the prompt is certainly the same). In the table "rerank − HNSW" 4 of 18 significance marks changed, all for EM or lemma EM on 200 questions; every difference keeps its sign and the F1 marks are unchanged.
+- **IVF-PQ** differs between platforms: Recall@5 averaged over seeds moves by up to 0.009, less than its spread over seeds (up to 0.05). One observation crossed the edge of a forecast interval, so the log-linear law now covers 20 of 36 observations instead of 19.
+- **LoRA** is trained again, which moves Recall@5 by up to 0.004. Hybrid search and reranking move by less than 0.002.
+- **Lemma hybrid** is now run with three seeds; the original run had seed 42 only.
+- **Headline numbers.** Of 360 fractions and percentages, 50 moved by more than 0.01 (one point for percentages); 49 of them are inside the 95% interval of the original run, and the last one is the law refit gap, which has no interval.
+- **Latency** was measured on the Colab machine and is not compared: index search on its CPU is 1.4–8 times slower than on the M3 Max, the reranker on the L4 is 3.3–4.5 times faster.
 
 ## Layout
 

@@ -1,0 +1,171 @@
+Gate: tables of the original run (commit 57de63d) against the full recompute of 2026-11-16
+============================================================================================
+Rule. Every headline number stays within 0.01 (one point for percentages) or inside the 95%
+interval of the original run, and no conclusion flips: sign and significance of paired
+differences, law against the last-value forecast, router against random routing.
+Intervals of the original run are taken from its headline.json or bootstrapped from its tables
+with the report's own procedure. Latency was measured on different hardware and is not compared.
+Marks: '+' interval above zero, '-' below zero, '0' interval contains zero.
+
+Outcome. The rule is not met in five cells: four significance marks of the generation table
+'rerank minus HNSW' (section 1) and one interval hit of the degradation law for IVF-PQ
+(section 2). No difference changed its sign and every other mark is the same. The causes are
+the provider's generator, which does not repeat its answers (section 6), and IVF-PQ, which
+differs between platforms by less than its spread over seeds (section 5). The recomputed
+tables were accepted with both effects listed as limitations in the report.
+
+1. Paired differences in headline.json: sign and significance
+--------------------------------------------------------------------------------------------
+retrieval   compared  56   same mark  56   changed mark  0   changed sign 0
+router      compared   2   same mark   2   changed mark  0   changed sign 0
+generation  compared  18   same mark  14   changed mark  4   changed sign 0
+
+Changed marks (generation, rerank minus HNSW, 200 questions per language):
+  key                                          original                        recompute
+  d_uk_em_100k                +0.040 [-0.006; +0.086] 0        +0.060 [+0.011; +0.108] +
+  d_uk_em_lemma_10k           +0.060 [+0.012; +0.106] +        +0.040 [-0.006; +0.082] 0
+  d_uk_em_lemma_100k          +0.040 [-0.015; +0.098] 0        +0.065 [+0.014; +0.115] +
+  d_en_em_10k                 +0.025 [-0.010; +0.061] 0        +0.040 [+0.005; +0.076] +
+
+2. Report tables: every cell with a significance mark or an interval-hit mark
+--------------------------------------------------------------------------------------------
+cells compared 258   same mark 253   changed mark 5
+  5. Генерація і розбір помилок / Переранжування − HNSW / EN | 10 тис. / Δ EM
+      original   +0,025 [−0,010; +0,061]
+      recompute  +0,040 [+0,005; +0,076] ↑
+  5. Генерація і розбір помилок / Переранжування − HNSW / UK | 10 тис. / Δ EM за лемами
+      original   +0,060 [+0,012; +0,106] ↑
+      recompute  +0,040 [−0,006; +0,082]
+  5. Генерація і розбір помилок / Переранжування − HNSW / UK | 100 тис. / Δ EM
+      original   +0,040 [−0,006; +0,086]
+      recompute  +0,060 [+0,011; +0,108] ↑
+  5. Генерація і розбір помилок / Переранжування − HNSW / UK | 100 тис. / Δ EM за лемами
+      original   +0,040 [−0,015; +0,098]
+      recompute  +0,065 [+0,014; +0,115] ↑
+  7. Закон деградації / UK | hard | IVF-PQ / Лог-лінійна
+      original   0,192, ні, −0,063
+      recompute  0,192, так, −0,057
+
+3. Degradation law: registered forecast against the observation at 1 million passages
+--------------------------------------------------------------------------------------------
+  block                   log-linear    power  last-value   law beats last-value
+  uk random    original        0.054    0.042       0.104   yes, yes
+  uk random    recompute       0.055    0.042       0.104   yes, yes
+  uk hard      original        0.055    0.095       0.024   no, no
+  uk hard      recompute       0.054    0.095       0.024   no, no
+  en random    original        0.026    0.015       0.069   yes, yes
+  en random    recompute       0.027    0.015       0.068   yes, yes
+  en hard      original        0.037    0.092       0.022   no, no
+  en hard      recompute       0.037    0.092       0.022   no, no
+  observations inside the forecast interval, of 36:
+    log-linear  19 -> 20
+    power       20 -> 20
+  largest gap between a refit on the measured curves and the registered forecast: 0.0000 -> 0.0101
+
+4. Headline numbers
+--------------------------------------------------------------------------------------------
+data counts (questions, articles, passages, tokens): 22 of 22 identical
+fractions and percentages compared: 360
+moved by more than the tolerance: 50
+  inside the 95% interval of the original run: 49
+  outside or without an interval: 1
+
+  key                             original  recompute    shift   interval of the original run
+  uk_read_1m                        0.5054     0.4624  -0.0430   [0.395; 0.606] inside
+  en_read_1m                        0.4396     0.4066  -0.0330   [0.337; 0.533] inside
+  uk_em_ivfpq_100k                  0.2650     0.2950  +0.0300   [0.194; 0.358] inside
+  uk_em_oracle                      0.5100     0.4850  -0.0250   [0.433; 0.592] inside
+  uk_lemma_graph_10k                0.4300     0.4550  +0.0250   [0.350; 0.514] inside
+  uk_lemma_ivfpq_10k                0.3700     0.3950  +0.0250   [0.290; 0.467] inside
+  uk_lemma_ivfpq_100k               0.3050     0.3300  +0.0250   [0.228; 0.404] inside
+  d_uk_em_lemma_100k                0.0400     0.0650  +0.0250   [-0.015; 0.098] inside
+  uk_em_graph_10k                   0.3850     0.4100  +0.0250   [0.311; 0.461] inside
+  uk_em_ivfpq_10k                   0.3200     0.3450  +0.0250   [0.241; 0.413] inside
+  uk_read_10k                       0.4865     0.4662  -0.0203   [0.380; 0.580] inside
+  uk_em_adaptive_1m                 0.3000     0.3200  +0.0200   [0.229; 0.383] inside
+  uk_em_exact_1m                    0.3100     0.3300  +0.0200   [0.242; 0.387] inside
+  uk_em_hnsw_1m                     0.3000     0.3200  +0.0200   [0.229; 0.383] inside
+  en_lemma_hnsw_1m                  0.4200     0.4400  +0.0200   [0.354; 0.487] inside
+  en_lemma_ivfpq_10k                0.4750     0.4950  +0.0200   [0.410; 0.546] inside
+  en_em_ivfpq_1m                    0.3200     0.3400  +0.0200   [0.260; 0.384] inside
+  d_uk_em_1m                        0.0800     0.0600  -0.0200   [0.043; 0.119] inside
+  d_uk_em_100k                      0.0400     0.0600  +0.0200   [-0.006; 0.086] inside
+  d_uk_em_lemma_10k                 0.0600     0.0400  -0.0200   [0.012; 0.106] inside
+  d_en_f1_10k                       0.0290     0.0442  +0.0152   [0.000; 0.059] inside
+  en_read_100k                      0.4211     0.4060  -0.0150   [0.331; 0.500] inside
+  uk_em_no_rag                      0.2200     0.2050  -0.0150   [0.158; 0.296] inside
+  uk_lemma_adaptive_100k            0.4450     0.4300  -0.0150   [0.364; 0.531] inside
+  uk_lemma_adaptive_1m              0.3450     0.3600  +0.0150   [0.276; 0.425] inside
+  uk_lemma_exact_100k               0.4450     0.4300  -0.0150   [0.364; 0.531] inside
+  uk_lemma_exact_1m                 0.3600     0.3750  +0.0150   [0.296; 0.434] inside
+  uk_em_finetuned_1m                0.2850     0.3000  +0.0150   [0.207; 0.374] inside
+  uk_lemma_finetuned_1m             0.3200     0.3350  +0.0150   [0.239; 0.409] inside
+  uk_em_graph_100k                  0.3750     0.3900  +0.0150   [0.287; 0.468] inside
+  uk_lemma_hnsw_100k                0.4450     0.4300  -0.0150   [0.364; 0.531] inside
+  uk_lemma_hnsw_1m                  0.3450     0.3600  +0.0150   [0.276; 0.425] inside
+  uk_lemma_ivfpq_1m                 0.2300     0.2150  -0.0150   [0.179; 0.289] inside
+  en_lemma_adaptive_1m              0.4400     0.4550  +0.0150   [0.372; 0.508] inside
+  en_em_hnsw_1m                     0.4150     0.4300  +0.0150   [0.349; 0.482] inside
+  en_em_rerank_10k                  0.5300     0.5450  +0.0150   [0.466; 0.597] inside
+  d_en_em_lemma_10k                 0.0200     0.0350  +0.0150   [-0.015; 0.055] inside
+  d_en_em_lemma_1m                  0.0350     0.0200  -0.0150   [-0.010; 0.080] inside
+  d_uk_em_10k                       0.0400     0.0250  -0.0150   [-0.005; 0.082] inside
+  d_uk_em_lemma_1m                  0.0900     0.0750  -0.0150   [0.049; 0.131] inside
+  d_en_em_10k                       0.0250     0.0400  +0.0150   [-0.010; 0.061] inside
+  en_em_ivfpq_10k                   0.4650     0.4800  +0.0150   [0.397; 0.535] inside
+  en_em_ivfpq_100k                  0.3950     0.4100  +0.0150   [0.330; 0.460] inside
+  en_lemma_ivfpq_1m                 0.3300     0.3450  +0.0150   [0.267; 0.395] inside
+  uk_lemma_oracle                   0.5750     0.5600  -0.0150   [0.497; 0.663] inside
+  d_uk_f1_100k                      0.0477     0.0618  +0.0142   [0.001; 0.087] inside
+  uk_hybrid_lemma_300k              0.5792     0.5927  +0.0135   [0.488; 0.648] inside
+  d_uk_hybrid_lemma_exact_300k      0.0253     0.0388  +0.0135   [0.002; 0.047] inside
+  d_uk_hybrid_lemma_hybrid_300k     0.0722     0.0857  +0.0135   [0.049; 0.098] inside
+  law_refit_gap                     0.0000     0.0101  +0.0101   none
+
+Notes. The three hybrid_lemma numbers at 300 thousand moved because the original run measured
+this method with seed 42 only and the recompute averages three seeds; the rows of seed 42 are
+identical. law_refit_gap is a diagnostic without an interval; see section 5 for its source.
+
+Outcome counts that changed:
+  uk_wrong_10k_n                       119        117
+  uk_search_10k_n                       47         48
+  uk_wrong_100k_n                      122        124
+  uk_search_100k_n                      63         64
+  uk_wrong_1m_n                        140        136
+  en_wrong_100k_n                      101        100
+  en_wrong_1m_n                        117        114
+  en_search_1m_n                        24         23
+  law_log_hits_n                        19         20
+
+5. Retrieval tables: Recall@5 on test questions, cells present in both runs
+--------------------------------------------------------------------------------------------
+rows: original 699973, recompute 745668; cells in both runs: 581
+  method          largest shift, one seed   largest shift, seed mean   seed spread, original
+  adaptive                         0.0000                     0.0000                  0.0152
+  exact                            0.0000                     0.0000                  0.0108
+  finetuned                        0.0068                     0.0041                  0.0176
+  graph                            0.0000                     0.0000                  0.0419
+  graph_exact                      0.0000                     0.0000                  0.0406
+  graph_no_ppr                     0.0000                     0.0000                  0.0122
+  hnsw                             0.0000                     0.0000                  0.0108
+  hybrid                           0.0027                     0.0009                  0.0149
+  hybrid_lemma                     0.0000                     0.0000                  0.0000
+  ivfpq                            0.0338                     0.0086                  0.0501
+  rerank                           0.0014                     0.0014                  0.0135
+  rerank_top50                     0.0000                     0.0000                  0.0041
+Notes. hybrid_lemma has one seed in the original run, hence no spread. The original run was
+computed on Apple Silicon (ARM, MPS), the recompute on Google Colab (x86, CUDA). Exact search,
+HNSW and the graph methods are identical. IVF-PQ, which trains its quantizers on the vectors,
+differs most. LoRA is trained again, so its vectors differ. Hybrid and rerank differ in a few
+questions. The shifted IVF-PQ and LoRA curves give the refit gap of section 3.
+
+6. Answers: share of answers repeated word for word
+--------------------------------------------------------------------------------------------
+provider (qwen3-235b through OpenRouter, temperature 0, seed 42): 84.2% of 10400 answers
+  en no_rag   75.5% of 200 (identical prompts)
+  en oracle   95.5% of 200 (identical prompts)
+  en rag      89.4% of 4800
+  uk no_rag   55.5% of 200 (identical prompts)
+  uk oracle   86.0% of 200 (identical prompts)
+  uk rag      80.1% of 4800
+local control (Qwen3-4B, MLX): 100.0% of 1000 answers
